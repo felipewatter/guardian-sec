@@ -186,7 +186,7 @@ Please report responsibly via private channel.
 
 ## 📜 License
 
-MIT License © Felipe Watter
+MIT License © Felipe Silva
 
 ---
 
