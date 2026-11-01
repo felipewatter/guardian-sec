@@ -1,0 +1,46 @@
+name: Publish Guardian Sec v2.1.0
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/release-v2.1.0.yml
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: Publish official Guardian Sec v2.1.0
+    if: github.repository == 'felipewatter/guardian-sec'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main and release notes
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          fetch-depth: 0
+      - name: Verify validated commit, version and notes
+        env:
+          RELEASE_COMMIT: 67beb93888d158bfcdb62ac0e6dd7e619bfa00be
+        shell: bash
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor "$RELEASE_COMMIT" HEAD
+          test -s .github/release-notes/v2.1.0.md
+          git show "$RELEASE_COMMIT:package.json" | grep -q '"version": "2.1.0"'
+      - name: Create official stable GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_COMMIT: 67beb93888d158bfcdb62ac0e6dd7e619bfa00be
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view v2.1.0 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "v2.1.0 already published; not replacing existing release."
+            exit 0
+          fi
+          gh release create v2.1.0 \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$RELEASE_COMMIT" \
+            --title "Guardian Sec v2.1.0 — Security Posture Engine & DevSecOps Hardening" \
+            --notes-file .github/release-notes/v2.1.0.md \
+            --latest
