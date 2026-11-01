@@ -51,7 +51,7 @@ test('version wildcards and non-registry dependencies are clearly reported',asyn
 test('workflow detects unpinned external action and broad permissions',async()=>{
   const root=make();
   try{
-    put(root,'.github/workflows/main.yml','name: Main\npermissions: write-all\non: pull_request_target\njobs:\n  scan:\n    steps:\n      - uses: actions/checkout@v4\n');
+    put(root,'.github/workflows/main.yml','name: Main\npermissions: write-all\non:\n  pull_request_target:\njobs:\n  scan:\n    steps:\n      - uses: actions/checkout@v4\n');
     const r=await(await mod()).runScan(root);
     assert.deepEqual(r.findings.map(x=>x.ruleId).sort(),[
       'broad-token-permissions','privileged-pr-trigger','unpinned-github-action'].sort());
