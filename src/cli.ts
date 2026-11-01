@@ -93,7 +93,7 @@ export async function main(args:readonly string[]=process.argv.slice(2)):Promise
     else console.log(output);
     return exit;
   }catch{
-    console.error('guardian-sec: scan failed or incomplete. No clean result issued.');
+    console.error('guardian-sec: verification failed or incomplete. No valid report produced.');
     return 2;
   }
 }
