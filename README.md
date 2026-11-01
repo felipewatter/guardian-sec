@@ -1,193 +1,82 @@
+# Guardian Sec — Repository Security Posture
 
-# 🔐 guardian-sec
+[![CI](https://github.com/felipewatter/guardian-sec/actions/workflows/ci.yml/badge.svg)](https://github.com/felipewatter/guardian-sec/actions/workflows/ci.yml)
 
-Advanced Repository Security Posture Engine  
-Holistic DevSecOps Scanner for Git Repositories
+Ferramenta **offline** em Node.js/TypeScript para verificações locais de postura de segurança em repositórios. A versão **2.1.0** substitui promessas não implementadas da documentação antiga por verificações reais, relatórios auditáveis e escopo claramente identificado.
 
----
+## Capacidades implementadas
 
-## 📌 Overview
+- **Segredos:** detecta padrões de AWS, GitHub, Stripe, Google, PEM e configurações com valores potencialmente sensíveis. Registra apenas a regra, o caminho e a linha; **nunca o segredo encontrado**.
+- **Dependências:** identifica projetos npm sem lockfile, referências de pacotes fora do registry e versões como `*` e `latest`. **Não pesquisa CVEs nem valida advisories remotamente**.
+- **CI/CD:** identifica ações GitHub não fixadas a SHA completo, workflows com permissões amplas e acionadores privilegiados. Faz inspeção estática de texto, não interpretação integral do YAML.
+- **Histórico Git opcional:** `--history` inspeciona patches adicionados nos últimos **30 commits alcançáveis pelas referências locais**. Não inspeciona histórico completo.
+- **SBOM CycloneDX 1.5:** `sbom` gera lista de componentes npm a partir de `package-lock.json`, sem download de pacotes ou consultas remotas.
+- **Relatórios:** texto, JSON, Markdown e SARIF para integração com CI/CD. O score ponderado 0–100 reflete **somente as categorias implementadas e aplicáveis**; categorias não verificadas são identificadas no relatório.
 
-guardian-sec is a security posture engine designed to perform a comprehensive audit of Git repositories, focusing on:
+O software **não avalia automaticamente políticas de proteção de branches, configurações remotas de Dependabot ou alertas privados da API GitHub**. Não promete um score DevSecOps universal e não envia dados para serviços externos.
 
-- Secret exposure detection
-- Dependency hygiene analysis
-- GitHub security configuration checks
-- CI/CD security validation
-- Commit history scanning
-- SBOM generation (CycloneDX-ready)
-- Security scoring (0–100)
-- Plugin-based extensibility
-- SARIF export for GitHub Security tab
+## Requisitos
 
-Built following modern DevSecOps, Secure SDLC and OpenSSF best practices.
+Node.js 22 ou 24 e npm. Para `--history`, requer Git instalado e um repositório Git local. Não há dependências runtime externas.
 
----
+## Instalação
 
-## 🎯 Problem Statement
+```bash
+git clone https://github.com/felipewatter/guardian-sec.git
+cd guardian-sec
+npm install
+npm run build
+node dist/cli.js --help
+```
 
-Modern repositories frequently suffer from:
+Instalação global opcional do checkout compilado: `npm install -g .`. **Não há confirmação de publicação da versão 2.1.0 no registro npm.**
 
-- Accidental credential leaks
-- Disabled security alerts
-- Unprotected branches
-- Weak CI/CD controls
-- Poor dependency hygiene
-- Lack of SBOM transparency
-- Secrets removed from HEAD but present in Git history
+## Auditoria do diretório atual
 
-guardian-sec provides a unified and extensible engine to detect these issues early.
+```bash
+node dist/cli.js scan . --format json
+node dist/cli.js scan . --format md --output ./guardian-report.md
+node dist/cli.js scan . --format sarif --output ./guardian-report.sarif
+node dist/cli.js scan . --history --fail-on high
+```
 
----
+O scanner ignora `.git`, `node_modules`, `dist`, `coverage`, binários reconhecidos e links simbólicos. Arquivos acima do limite geram **erro operacional 2**, e não resultado limpo. O histórico é desativado por padrão e executado apenas mediante escolha explícita.
 
-## 🏗 Architecture
+## Gerar SBOM
 
-guardian-sec/
-│
-├── src/
-│   ├── cli.ts
-│   ├── scanner.ts
-│   ├── checks/
-│   ├── reporters/
-│   └── core/
-│
-├── .github/workflows/
-├── SECURITY.md
-├── LICENSE
-└── README.md
+```bash
+node dist/cli.js sbom . --output ./guardian.sbom.json
+```
 
-Core Components:
+Gera objeto JSON compatível com CycloneDX 1.5 baseado nos pacotes npm registrados em `package-lock.json`. Se não encontrar lockfile válido, a execução falha. A SBOM não é uma prova de integridade ou de ausência de vulnerabilidades.
 
-- Scan Engine
-- Score Engine
-- Plugin Manager
-- Reporters (Console, JSON, Markdown, HTML, SARIF)
+## Opções
 
----
+| Opção | Padrão | Significado |
+|---|---|---|
+| `--format text\|json\|md\|sarif` | text | Formato do relatório scan |
+| `--history` | off | Consulta opcional e limitada dos últimos 30 commits |
+| `--output ARQUIVO` | stdout | Cria novo arquivo, sem sobrescrever |
+| `--fail-on none\|low\|medium\|high\|critical` | high | Limiar para código de saída 1 |
+| `--max-files` | 10000 | Limite de 30 mil arquivos |
+| `--max-file-bytes` | 1048576 | Máximo 4 MiB por arquivo |
+| `--max-total-bytes` | 33554432 | Máximo 128 MiB no total |
+| `--max-depth` | 24 | Máximo 48 níveis |
 
-## 🔐 Security Score Model
+**Códigos de saída:** 0 = sem achados no limiar configurado; 1 = achados no limiar; 2 = falha ou verificação incompleta. Podem existir achados menos severos mesmo com saída 0.
 
-| Category              | Weight |
-|-----------------------|--------|
-| Secrets               | 25     |
-| Dependencies          | 20     |
-| CI/CD                 | 15     |
-| Branch Protection     | 15     |
-| Commit History        | 15     |
-| GitHub Security       | 10     |
+## Interpretação da pontuação
 
-Score range: 0–100
+O score usa pesos **50** para segredos, **25** para dependências, **25** para CI/CD e **20** para histórico, se habilitado. Categorias sem arquivos pertinentes são `not_applicable`; o histórico desativado é `not_checked`, ambos excluídos do denominador. O indicador reflete apenas essas verificações e **não equivale a garantia de segurança**.
 
----
+## Testes e segurança
 
-## 🚀 Installation
+```bash
+npm run typecheck
+npm test
+npm pack --dry-run
+```
 
-Global:
+O GitHub Actions executa testes com Node 22/24 em Ubuntu, Windows e macOS e audita as dependências da ferramenta.
 
-npm install -g guardian-sec
-
-Using npx:
-
-npx guardian-sec scan .
-
----
-
-## 📊 Usage
-
-Scan repository:
-
-guardian-sec scan .
-
-Export Markdown:
-
-guardian-sec scan . --format md
-
-Generate SARIF:
-
-guardian-sec scan . --format sarif
-
-Generate SBOM:
-
-guardian-sec sbom
-
----
-
-## 🔍 What Is Checked?
-
-1. Secret Detection (AWS keys, private keys, API tokens)
-2. Dependency Hygiene
-3. CI/CD Security Validation
-4. GitHub Security Configuration
-5. Commit History Secret Detection
-
----
-
-## 🧩 Plugin System
-
-Example plugin:
-
-export default {
-  name: "custom-check",
-  async run(repoPath) {
-    return {
-      check: "Custom Policy Validation",
-      passed: true,
-      findings: 0
-    };
-  }
-};
-
----
-
-## 📄 SBOM Support
-
-CycloneDX-compatible SBOM generation for supply chain transparency.
-
----
-
-## 🔗 GitHub API Integration
-
-Supports:
-
-- Dependabot verification
-- Branch protection validation
-- Security alerts validation
-- Repository metadata checks
-
----
-
-## 🔐 Responsible Disclosure
-
-Security vulnerabilities should NOT be reported via public issues.
-
-Please report responsibly via private channel.
-
----
-
-## 🤝 Contributing
-
-1. Fork repository
-2. Create feature branch
-3. Add tests
-4. Submit PR
-5. Follow conventional commits
-
----
-
-## 📊 Roadmap
-
-- Web dashboard
-- Slack integration
-- OpenSSF Scorecard API integration
-- Fuzz testing
-- Multi-repository comparison
-
----
-
-## 📜 License
-
-MIT License © Felipe Silva
-
----
-
-guardian-sec represents DevSecOps maturity, supply chain awareness, and enterprise-ready security architecture.
+Leia [SECURITY.md](SECURITY.md) para limitações, detecção heurística, proteção contra condições de corrida e privacidade.
