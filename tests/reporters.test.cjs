@@ -15,7 +15,6 @@ test('SARIF output has standard schema, no credential snippets and correct lines
     const sarif=sarifReport(r);
     assert.equal(sarif.version,'2.1.0');
     assert.equal(sarif.runs[0].results[0].ruleId,'github-token');
-    assert.equal(sarif.runs[0].results[0].locations[0].physicalLocation.region?.startLine,undefined);
     assert.equal(sarif.runs[0].results[0].locations[0].physicalLocation.region.startLine,2);
     for(const value of [JSON.stringify(sarif),markdownReport(r),consoleReport(r)])
       assert.ok(!value.includes(secret),'Matched token leaked');
