@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 import {writeFile} from 'node:fs/promises';
+import {fileURLToPath} from 'node:url';
+import path from 'node:path';
 import {runScan} from './scanner.js';
 import {inventory} from './core/files.js';
 import {generateBom} from './core/sbom.js';
@@ -95,4 +97,6 @@ export async function main(args:readonly string[]=process.argv.slice(2)):Promise
     return 2;
   }
 }
-void main().then(code=>{process.exitCode=code;});
+if(process.argv[1] && path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
+  void main().then(code=>{process.exitCode=code;});
+}
