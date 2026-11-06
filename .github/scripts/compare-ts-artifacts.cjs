@@ -46,6 +46,11 @@ for (const f of fileNames) {
   if (!oldFiles.has(f)) failures.push('Added compiled artifact: ' + f);
   else if (!newFiles.has(f)) failures.push('Removed compiled artifact: ' + f);
   else if (norm(oldFiles.get(f)) !== norm(newFiles.get(f))) {
+    const canonicalIndexedAccess = (text) => norm(text).replace(/\["([A-Za-z_$][A-Za-z0-9_$]*)"\]/g, "['$1']");
+    if (f.endsWith('.d.ts') && canonicalIndexedAccess(oldFiles.get(f)) === canonicalIndexedAccess(newFiles.get(f))) {
+      notes.push('Type declaration differs only in indexed-access literal quote style: ' + f);
+      continue;
+    }
     if (f.endsWith('.map')) notes.push('Changed source map: ' + f);
     else failures.push('Changed compiled artifact: ' + f + ' (baseline ' + hash(norm(oldFiles.get(f))) + '; candidate ' + hash(norm(newFiles.get(f))) + ')');
   }
