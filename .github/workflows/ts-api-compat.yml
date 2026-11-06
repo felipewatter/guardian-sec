@@ -41,3 +41,8 @@ jobs:
           npm run build
       - name: Fail on exported contract or compiled artifact regression
         run: node candidate/.github/scripts/compare-ts-artifacts.cjs baseline candidate
+      - name: Show differences in type declarations when comparison fails
+        if: failure()
+        shell: bash
+        run: |
+          diff -u baseline/dist/core/model.d.ts candidate/dist/core/model.d.ts || true
