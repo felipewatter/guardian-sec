@@ -1,6 +1,6 @@
 {
   "name": "guardian-sec",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "Bounded local repository security posture, history detection and CycloneDX SBOM",
   "license": "MIT",
   "author": "Felipe Watter",
